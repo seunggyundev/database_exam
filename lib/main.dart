@@ -78,7 +78,47 @@ class _DatabaseApp extends State<DatabaseApp> {
       appBar: AppBar(
         title: Text('Database Example'),
       ),
-      body: Container(),
+      body: Container(
+        child: Center(
+          //할 일 목록을 Future로 선언했으므로 FutureBuilder를 이용해서 화면에 표시할 위젯을 배치
+          //FutureBuilder위젯은 서버에서 데이터를 받거나 파일에 데이터를 가져올 때 사용함
+          child: FutureBuilder(
+            builder: (context, snapshot) {
+              //데이터를 가져오는 동안 시간이 걸리기 때문에 그 사이에 표시할 위젯을 만들기 위해 switch문으로 상태확인함
+              switch (snapshot.connectionState) {
+                case ConnectionState.none:
+                  return CircularProgressIndicator();
+                case ConnectionState.waiting:
+                  return CircularProgressIndicator();
+                case ConnectionState.active:
+                  return CircularProgressIndicator();
+                case ConnectionState.done:  //상태가 done이 되면 가져온 데이터를 바탕으로 ListView.builder를 이용해 화면에 표시함
+                  if (snapshot.hasData) {
+                    return ListView.builder(
+                      itemBuilder: (context, index) {
+                        Todo todo = (snapshot.data as List<Todo>)[index];
+                        return Card(
+                          child: Column(
+                            children: <Widget>[
+                              Text(todo.title!),
+                              Text(todo.content!),
+                              Text('${todo.active == 1 ? 'true' : 'false'}'),
+                            ],
+                          ),
+                        );
+                      },
+                      itemCount: (snapshot.data as List<Todo>).length,
+                    );
+                  } else {
+                    return Text('No data');
+                  }
+              }
+              return CircularProgressIndicator();
+            },
+            future: todoList,
+          ),
+        ),
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           final todo = await Navigator.of(context).pushNamed('/add');
@@ -97,6 +137,10 @@ class _DatabaseApp extends State<DatabaseApp> {
     final Database database = await widget.db; //widget.db를 이용해 database객체 선언
     await database.insert('todos', todo.toMap(),  //'todos'는 테이블을 생성할 때 명시한 테이불 이름, todo.toMap()함수는 Todo클래스를 Map형태로 바꿔줌
         conflictAlgorithm: ConflictAlgorithm.replace);  //충돌이 발생할 때를 대비한 것, 데이터 입력과정에서 충돌이 발생할 경우 새 데이터로 교체하고자 replace선언
+    //새로운 데이터를 입력했을 때 화면에 나타나게끔 갱신하는 코드
+    setState(() {
+      todoList = getTodos();
+    });
   }
 
   //List<Map>은 value 값이 Map형태인 List타입
