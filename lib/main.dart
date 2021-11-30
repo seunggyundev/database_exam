@@ -220,17 +220,40 @@ class _DatabaseApp extends State<DatabaseApp> {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final todo = await Navigator.of(context).pushNamed('/add');
-          if (todo != null) {
-            _insertTodo(todo as Todo);
-          }
-        },
-        child: Icon(Icons.add),
+      floatingActionButton: Column(
+        children: <Widget> [
+          FloatingActionButton(
+            onPressed: () async {
+              final todo = await Navigator.of(context).pushNamed('/add');
+              if (todo != null) {
+                _insertTodo(todo as Todo);
+              }
+            },
+            heroTag: null,  //heroTag를 null로 설정하지 않으면 오류가 발생! 이유: 페이지가 넘어가는 위젯에 받아줄 태그가 없어서 오류 발생
+            child: Icon(Icons.add),
+          ),
+          SizedBox(
+            height: 10,
+          ),
+          FloatingActionButton(onPressed: () async {
+            _allUpdate();
+          },
+            heroTag: null,
+            child: Icon(Icons.update),
+          ),
+        ],
+        mainAxisAlignment: MainAxisAlignment.end,
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
+  }
+
+  void _allUpdate() async {
+    final Database database = await widget.db;
+    //데이터베이스에서 데이터를 수정할 때는 update문을 이용
+    await database.rawUpdate('update todos set active = 1 where active = 0');  //이 질의문은 todos테이블에서 active가 0인 데이터를 모두 찾아서 active를 1로 변경(set)한다
+    setState(() {
+      todoList = getTodos();
+    });
   }
 
   void _insertTodo(Todo todo) async {

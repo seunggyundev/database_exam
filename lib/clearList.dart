@@ -53,7 +53,7 @@ class _ClearListApp extends State<ClearListApp> {
                           ),
                           subtitle: Container(
                             child: Column(
-                              children: <Widget> [
+                              children: <Widget>[
                                 Text(todo.content!),
                                 Container(
                                   height: 1,
@@ -74,7 +74,45 @@ class _ClearListApp extends State<ClearListApp> {
           ),
         ),
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          final result = await showDialog(
+            context: context, builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text('완료한 일 삭제'),
+              content: Text('완료한 일을 모두 삭제할까요?'),
+              actions: <Widget>[
+                TextButton(onPressed: () {
+                  Navigator.of(context).pop(true);
+                },
+                  child: Text('예'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(false);
+                  },
+                  child: Text('아니요'),
+                ),
+              ],
+            );
+          },);
+          if (result == true) {
+            _removeAllTodos();
+          }
+        },
+        child: Icon(Icons.remove),
+      ),
     );
+  }
+
+  //_removeAllTodos()함수는 데이터베이스에서 데이터를 삭제함
+  void _removeAllTodos() async {
+    final Database database = await widget.database;
+    //데이터베이스에서 데이터를 삭제할 때는 delete문을 사용함
+    database.rawDelete('delete from todos where active=1');  //이 질의문은 todos테이블에서 active가 1인 모든 데이터를 삭제하라는 의미
+    setState(() {
+      clearList = getClearList();
+    });
   }
 
   //데이터베이스에서 완료한 일만 불러오는 getClearList()함수
@@ -89,7 +127,7 @@ class _ClearListApp extends State<ClearListApp> {
 
     return List.generate(
       maps.length,
-      (i) {
+          (i) {
         return Todo(
             title: maps[i]['title'].toString(),
             content: maps[i]['content'].toString(),
